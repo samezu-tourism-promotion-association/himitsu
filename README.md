@@ -15,6 +15,14 @@ uv pip install huggingface_hub[cli]
 uv run login.py
 ```
 
+## APIを使う
+
+```
+uv run fastapi dev api.py
+```
+
+`http://localhost:8000/docs`からAPIのテストが可能です。
+
 ---
 
 以下原文。
