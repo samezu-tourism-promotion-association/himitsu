@@ -3,6 +3,7 @@ from typing import List
 import torch
 import torch.nn.functional as F
 import transformers
+from . import loader
 
 
 def topk_tokens(
@@ -56,19 +57,23 @@ def encode(
 ) -> str:
     validate_secret(secret)
 
-    input_ids = tokenizer.encode(prompt, return_tensors="pt", add_special_tokens=False)
+    input_ids = tokenizer.encode(
+        prompt, return_tensors="pt", add_special_tokens=False)
     input_ids = input_ids.to(model.device)
     past_key_values = None
     generated_ids = torch.tensor([], dtype=torch.long, device=model.device)
     secret_index = 0
 
     while secret_index < len(secret):
-        output = model(input_ids=input_ids, past_key_values=past_key_values, use_cache=True)
-        logits, past_key_values = output.logits, output.past_key_values  # logits: (1, Time, Vocab)
+        output = model(input_ids=input_ids,
+                       past_key_values=past_key_values, use_cache=True)
+        # logits: (1, Time, Vocab)
+        logits, past_key_values = output.logits, output.past_key_values
         logits = logits[0, -1, :]  # (Vocab,)
         supress_special_tokens(tokenizer, special_tokens, logits)
         probabilities = F.softmax(logits, dim=-1)
-        probabilities, indices = torch.sort(probabilities, descending=True)  # (Vocab,), (Vocab,)
+        probabilities, indices = torch.sort(
+            probabilities, descending=True)  # (Vocab,), (Vocab,)
 
         candidate_count = max(torch.sum(probabilities >= min_prob).item(), 1)
         candidate_tokens = topk_tokens(tokenizer, candidate_count, indices)
@@ -80,23 +85,27 @@ def encode(
         if bit_count == 0:
             selected_token_id = indices[0]  # use the most probable token
             input_ids = selected_token_id.reshape(1, -1)
-            generated_ids = torch.cat((generated_ids, selected_token_id.unsqueeze(0)))
+            generated_ids = torch.cat(
+                (generated_ids, selected_token_id.unsqueeze(0)))
             continue
 
-        secret_to_encode = secret[secret_index : secret_index + bit_count]
+        secret_to_encode = secret[secret_index: secret_index + bit_count]
         if len(secret_to_encode) < bit_count:
             secret_to_encode += "0" * (bit_count - len(secret_to_encode))
         selected_index = new_candidate_indices[int(secret_to_encode, base=2)]
         selected_token_id = indices[selected_index]
 
         input_ids = selected_token_id.reshape(1, -1)
-        generated_ids = torch.cat((generated_ids, selected_token_id.unsqueeze(0)))
+        generated_ids = torch.cat(
+            (generated_ids, selected_token_id.unsqueeze(0)))
         secret_index += bit_count
 
     if byte_level_vocab:
-        cover_text = tokenizer.decode(generated_ids, clean_up_tokenization_spaces=False)
+        cover_text = tokenizer.decode(
+            generated_ids, clean_up_tokenization_spaces=False)
     else:
-        cover_text = "".join([t for t in tokenizer.convert_ids_to_tokens(generated_ids.tolist())])
+        cover_text = "".join(
+            [t for t in tokenizer.convert_ids_to_tokens(generated_ids.tolist())])
         cover_text = cover_text.replace("▁", " ")
     return cover_text
 
@@ -110,24 +119,29 @@ def decode(
     special_tokens: List[str] = [],
     byte_level_vocab: bool = False,
 ) -> str:
-    input_ids = tokenizer.encode(prompt, return_tensors="pt", add_special_tokens=False)
+    input_ids = tokenizer.encode(
+        prompt, return_tensors="pt", add_special_tokens=False)
     input_ids = input_ids.to(model.device)
     past_key_values = None
     secret = ""
     current_index = 0
 
     if byte_level_vocab:
-        cover_text = "".join(["".join(tokenizer.tokenize(c)) for c in cover_text])
+        cover_text = "".join(["".join(tokenizer.tokenize(c))
+                             for c in cover_text])
     else:
         cover_text = cover_text.replace(" ", "▁")
 
     while current_index < len(cover_text):
-        output = model(input_ids=input_ids, past_key_values=past_key_values, use_cache=True)
-        logits, past_key_values = output.logits, output.past_key_values  # logits: (1, Time, Vocab)
+        output = model(input_ids=input_ids,
+                       past_key_values=past_key_values, use_cache=True)
+        # logits: (1, Time, Vocab)
+        logits, past_key_values = output.logits, output.past_key_values
         logits = logits[0, -1, :]  # (Vocab,)
         supress_special_tokens(tokenizer, special_tokens, logits)
         probabilities = F.softmax(logits, dim=-1)
-        probabilities, indices = torch.sort(probabilities, descending=True)  # (Vocab,), (Vocab,)
+        probabilities, indices = torch.sort(
+            probabilities, descending=True)  # (Vocab,), (Vocab,)
 
         candidate_count = max(torch.sum(probabilities >= min_prob).item(), 1)
         candidate_tokens = topk_tokens(tokenizer, candidate_count, indices)
@@ -138,7 +152,8 @@ def decode(
 
         if bit_count == 0:
             selected_token_id = indices[0]  # use the most probable token
-            selected_token = tokenizer.convert_ids_to_tokens(selected_token_id.item())
+            selected_token = tokenizer.convert_ids_to_tokens(
+                selected_token_id.item())
             current_index += len(selected_token)
             input_ids = selected_token_id.reshape(1, -1)
             continue
@@ -147,15 +162,18 @@ def decode(
         for i in range(2**bit_count):
             selected_idx = new_candidate_indices[i]
             selected_token_id = indices[selected_idx]
-            selected_token = tokenizer.convert_ids_to_tokens(selected_token_id.item())
+            selected_token = tokenizer.convert_ids_to_tokens(
+                selected_token_id.item())
             if cover_text[current_index:].startswith(selected_token):
                 next_secret = bin(i)[2:]
-                next_secret = "0" * (bit_count - len(next_secret)) + next_secret
+                next_secret = "0" * \
+                    (bit_count - len(next_secret)) + next_secret
                 secret += next_secret
                 break
 
         if next_secret is None:
-            raise ValueError("Decoding failed. Check if the parameters are the same as encoding.")
+            raise ValueError(
+                "Decoding failed. Check if the parameters are the same as encoding.")
 
         input_ids = selected_token_id.reshape(1, -1)
         current_index += len(selected_token)

@@ -6,9 +6,10 @@ readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
     "fastapi[standard]>=0.115.5",
+    "hf-transfer>=0.1.8",
+    "huggingface-hub>=0.26.2",
     "protobuf>=5.28.3",
     "sentencepiece>=0.2.0",
-    "setuptools>=75.5.0",
     "torch>=2.5.1",
     "transformers>=4.46.3",
 ]

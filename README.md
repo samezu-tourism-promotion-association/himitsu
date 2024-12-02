@@ -15,6 +15,15 @@ uv pip install huggingface_hub[cli]
 uv run login.py
 ```
 
+## クラウドGPUの設定
+
+modalのアカウントを作ってください。
+
+```
+uv pip install modal
+uv run modal setup
+```
+
 ## APIを使う
 
 ```
