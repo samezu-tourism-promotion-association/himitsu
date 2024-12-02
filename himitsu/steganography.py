@@ -3,7 +3,6 @@ from typing import List
 import torch
 import torch.nn.functional as F
 import transformers
-from . import loader
 
 
 def topk_tokens(
@@ -53,12 +52,11 @@ def encode(
     prompt: str = "Hi Bob.",
     min_prob: float = 0.01,
     special_tokens: List[str] = [],
-    byte_level_vocab: bool = False,
 ) -> str:
     validate_secret(secret)
 
     input_ids = tokenizer.encode(
-        prompt, return_tensors="pt", add_special_tokens=False)
+        prompt, return_tensors="pt")
     input_ids = input_ids.to(model.device)
     past_key_values = None
     generated_ids = torch.tensor([], dtype=torch.long, device=model.device)
@@ -100,13 +98,8 @@ def encode(
             (generated_ids, selected_token_id.unsqueeze(0)))
         secret_index += bit_count
 
-    if byte_level_vocab:
-        cover_text = tokenizer.decode(
-            generated_ids, clean_up_tokenization_spaces=False)
-    else:
-        cover_text = "".join(
-            [t for t in tokenizer.convert_ids_to_tokens(generated_ids.tolist())])
-        cover_text = cover_text.replace("▁", " ")
+    cover_text = tokenizer.decode(
+        generated_ids, skip_special_tokens=True)
     return cover_text
 
 
@@ -117,20 +110,15 @@ def decode(
     prompt: str = "Hi Bob.",
     min_prob: float = 0.01,
     special_tokens: List[str] = [],
-    byte_level_vocab: bool = False,
 ) -> str:
     input_ids = tokenizer.encode(
-        prompt, return_tensors="pt", add_special_tokens=False)
+        prompt, return_tensors="pt")
     input_ids = input_ids.to(model.device)
     past_key_values = None
     secret = ""
     current_index = 0
 
-    if byte_level_vocab:
-        cover_text = "".join(["".join(tokenizer.tokenize(c))
-                             for c in cover_text])
-    else:
-        cover_text = cover_text.replace(" ", "▁")
+    cover_text = cover_text.replace(" ", "▁")
 
     while current_index < len(cover_text):
         output = model(input_ids=input_ids,

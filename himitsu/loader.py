@@ -17,17 +17,12 @@ def load_model(language: str, device: str = "cpu", model_name: str = "sbintuitio
 
 
 def load_tokenizer(language: str, special_tokens: list = ["<unk>", "<s>", "</s>", "[PAD]", "[CLS]", "[SEP]", "[MASK]", "▁", "<0x0A>"],
-                   tokenizer_name: str = "sbintuitions/sarashina2-7b") -> Tuple[transformers.PreTrainedTokenizer, bool, List[str]]:
+                   tokenizer_name: str = "sbintuitions/sarashina2-7b") -> Tuple[transformers.PreTrainedTokenizer, List[str]]:
     if language == "en":
         tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
     elif language == "ja":
         tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
-        # tokenizer.do_lower_case = True
     else:
         raise ValueError(f"Invalid language: {language}")
 
-    # gpt2-medium and rugpt3medium_based_on_gpt2 use byte-level vocab and need to be handled slight
-    # differently when encoding/decoding
-    byte_level_vocab = language in ["en"]
-
-    return tokenizer, byte_level_vocab, special_tokens
+    return tokenizer, special_tokens
