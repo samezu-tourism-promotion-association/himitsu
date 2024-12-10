@@ -71,7 +71,7 @@ async def decode(cover_text: Annotated[str, Query(description="デコードす�
         min_prob=float(min_prob),
         special_tokens=special_tokens,
     )
-    return decoded
+    return decoded[:(len(decoded) // 8) * 8]
 
 
 @app.function(gpu="A100-80GB", timeout=10000)

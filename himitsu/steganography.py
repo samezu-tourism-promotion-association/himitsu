@@ -73,7 +73,8 @@ def encode(
         probabilities, indices = torch.sort(
             probabilities, descending=True)  # (Vocab,), (Vocab,)
 
-        candidate_count = max(torch.sum(probabilities >= min_prob).item(), 1)
+        candidate_count = min(
+            max(torch.sum(probabilities >= min_prob).item(), 1), 1 << 8)
         candidate_tokens = topk_tokens(tokenizer, candidate_count, indices)
         new_candidate_indices = resolve_collision(candidate_tokens)
 
@@ -131,7 +132,8 @@ def decode(
         probabilities, indices = torch.sort(
             probabilities, descending=True)  # (Vocab,), (Vocab,)
 
-        candidate_count = max(torch.sum(probabilities >= min_prob).item(), 1)
+        candidate_count = min(
+            max(torch.sum(probabilities >= min_prob).item(), 1), 1 << 8)
         candidate_tokens = topk_tokens(tokenizer, candidate_count, indices)
         new_candidate_indices = resolve_collision(candidate_tokens)
 
