@@ -54,6 +54,7 @@ def encode(
     special_tokens: List[str] = [],
 ) -> str:
     validate_secret(secret)
+    secret += "1"
 
     input_ids = tokenizer.encode(
         prompt, return_tensors="pt")
@@ -165,5 +166,9 @@ def decode(
 
         input_ids = selected_token_id.reshape(1, -1)
         current_index += len(selected_token)
+
+    while secret[-1] == "0":
+        secret = secret[:-1]
+    secret = secret[:-1]
 
     return secret
