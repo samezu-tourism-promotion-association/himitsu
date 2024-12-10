@@ -27,10 +27,16 @@ uv run modal setup
 ## APIを使う
 
 ```
-uv run fastapi dev api.py
+uv run fastapi dev local_api.py
 ```
 
 `http://localhost:8000/docs`からAPIのテストが可能です。
+
+modalの場合。
+
+```
+uv run modal serve api.py
+```
 
 ---
 
