@@ -11,11 +11,7 @@ def load_model(model_name: str = "leia-llm/Leia-Swallow-7b") -> transformers.Pre
     return model
 
 
-def load_tokenizer(language: str, special_tokens: list = ["<unk>", "<s>", "</s>", "[PAD]", "[CLS]", "[SEP]", "[MASK]", "▁", "<0x0A>"],
+def load_tokenizer(special_tokens: list = ["<unk>", "<s>", "</s>", "[PAD]", "[CLS]", "[SEP]", "[MASK]", "▁", "<0x0A>"],
                    tokenizer_name: str = "leia-llm/Leia-Swallow-7b") -> Tuple[transformers.PreTrainedTokenizer, List[str]]:
-    if language == "en" or language == "ja":
-        tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
-    else:
-        raise ValueError(f"Invalid language: {language}")
-
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
     return tokenizer, special_tokens
