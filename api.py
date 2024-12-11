@@ -18,7 +18,6 @@ models = [
     "llm-jp/llm-jp-3-1.8b",
     "leia-llm/Leia-Swallow-7b",
     "rinna/youri-7b",
-    "augmxnt/shisa-gamma-7b-v1"
 ]
 
 
@@ -39,6 +38,7 @@ image = (
         "sentencepiece>=0.2.0",
         "torch>=2.5.1",
         "transformers>=4.46.3",
+        "accelerate>=1.2.0",
     )
     .env({"HF_HUB_ENABLE_HF_TRANSFER": "1"})
     .run_function(download_model)
@@ -48,11 +48,11 @@ app = modal.App("himitsu", image=image)
 
 
 @web_app.get("/encode")
-async def encode(secret: Annotated[str, Query(description="秘密文。ビット列である必要があります")], prompt: Annotated[str, Query(description="生成プロンプト")], min_prob: float = 0.01, device=Query("cpu", enum=["cpu", "cuda:0", "mps"], description="使用するデバイス"),
-                 language=Query("ja", enum=["en", "ja"], description="文章の言語"), model_name=Query("leia-llm/Leia-Swallow-7b", enum=models, description="言語モデル（Hugging Face）")):
-    model = himitsu.load_model(language, device, model_name=model_name)
+async def encode(secret: Annotated[str, Query(description="秘密文。ビット列である必要があります")], prompt: Annotated[str, Query(description="生成プロンプト")], min_prob: float = 0.01,
+                 model_name=Query("leia-llm/Leia-Swallow-7b", enum=models, description="言語モデル（Hugging Face）")):
+    model = himitsu.load_model(model_name=model_name)
     tokenizer, special_tokens = himitsu.load_tokenizer(
-        language, tokenizer_name=model_name)
+        tokenizer_name=model_name)
     encoded = himitsu.encode(
         model=model,
         tokenizer=tokenizer,
@@ -65,11 +65,11 @@ async def encode(secret: Annotated[str, Query(description="秘密文。ビット
 
 
 @web_app.get("/decode")
-async def decode(cover_text: Annotated[str, Query(description="デコードする文章")], prompt: Annotated[str, Query(description="生成プロンプト")], min_prob: float = 0.01,  device=Query("cpu", enum=["cpu", "cuda:0", "mps"], description="使用するデバイス"),
-                 language=Query("ja", enum=["en", "ja"], description="文章の言語"), model_name=Query("leia-llm/Leia-Swallow-7b", enum=models, description="言語モデル（Hugging Face）")):
-    model = himitsu.load_model(language, device, model_name=model_name)
+async def decode(cover_text: Annotated[str, Query(description="デコードする文章")], prompt: Annotated[str, Query(description="生成プロンプト")], min_prob: float = 0.01,
+                 model_name=Query("leia-llm/Leia-Swallow-7b", enum=models, description="言語モデル（Hugging Face）")):
+    model = himitsu.load_model(model_name=model_name)
     tokenizer, special_tokens = himitsu.load_tokenizer(
-        language, tokenizer_name=model_name)
+        tokenizer_name=model_name)
 
     decoded = himitsu.decode(
         model=model,
@@ -82,7 +82,7 @@ async def decode(cover_text: Annotated[str, Query(description="デコードす�
     return decoded[:(len(decoded) // 8) * 8]
 
 
-@app.function(gpu="A100-80GB", timeout=10000)
+@app.function(gpu="A100-80GB:2", timeout=10000)
 @modal.asgi_app()
 def fastapi_app():
     return web_app

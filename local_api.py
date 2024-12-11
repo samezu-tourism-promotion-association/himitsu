@@ -14,11 +14,11 @@ models = [
 
 
 @app.get("/encode")
-async def encode(secret: Annotated[str, Query(description="秘密文。ビット列である必要があります")], prompt: Annotated[str, Query(description="生成プロンプト")], min_prob: float = 0.01, device=Query("cpu", enum=["cpu", "cuda:0", "mps"], description="使用するデバイス"),
-                 language=Query("ja", enum=["en", "ja"], description="文章の言語"), model_name=Query("leia-llm/Leia-Swallow-7b", enum=models, description="言語モデル（Hugging Face）")):
-    model = himitsu.load_model(language, device, model_name=model_name)
+async def encode(secret: Annotated[str, Query(description="秘密文。ビット列である必要があります")], prompt: Annotated[str, Query(description="生成プロンプト")], min_prob: float = 0.01,
+                 model_name=Query("leia-llm/Leia-Swallow-7b", enum=models, description="言語モデル（Hugging Face）")):
+    model = himitsu.load_model(model_name=model_name)
     tokenizer, special_tokens = himitsu.load_tokenizer(
-        language, tokenizer_name=model_name)
+        tokenizer_name=model_name)
     encoded = himitsu.encode(
         model=model,
         tokenizer=tokenizer,
@@ -31,11 +31,11 @@ async def encode(secret: Annotated[str, Query(description="秘密文。ビット
 
 
 @app.get("/decode")
-async def decode(cover_text: Annotated[str, Query(description="デコードする文章")], prompt: Annotated[str, Query(description="生成プロンプト")], min_prob: float = 0.01,  device=Query("cpu", enum=["cpu", "cuda:0", "mps"], description="使用するデバイス"),
-                 language=Query("ja", enum=["en", "ja"], description="文章の言語"), model_name=Query("leia-llm/Leia-Swallow-7b", enum=models, description="言語モデル（Hugging Face）")):
-    model = himitsu.load_model(language, device, model_name=model_name)
+async def decode(cover_text: Annotated[str, Query(description="デコードする文章")], prompt: Annotated[str, Query(description="生成プロンプト")], min_prob: float = 0.01,
+                 model_name=Query("leia-llm/Leia-Swallow-7b", enum=models, description="言語モデル（Hugging Face）")):
+    model = himitsu.load_model(model_name=model_name)
     tokenizer, special_tokens = himitsu.load_tokenizer(
-        language, tokenizer_name=model_name)
+        tokenizer_name=model_name)
 
     decoded = himitsu.decode(
         model=model,
